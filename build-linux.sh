@@ -32,17 +32,17 @@ apply_patch() {
 
 copy_defconfig () {
 	cd "${DIR}/linux" || exit
-	#make ARCH=${KERNEL_ARCH} CROSS_COMPILE="${CC}" distclean
+	make ARCH=${KERNEL_ARCH} CROSS_COMPILE="${CC}" distclean
 	#make ARCH=${KERNEL_ARCH} CROSS_COMPILE="${CC}" "${config}"
-	cp -v "${DIR}/defconfig_${config}" .config
+	cp -v "${DIR}/defconfig_${config}" "${DIR}/linux/.config"
 	cd "${DIR}/" || exit
 }
 
 make_menuconfig () {
 	cd "${DIR}/linux" || exit
 	#make ARCH=${KERNEL_ARCH} CROSS_COMPILE="${CC}" oldconfig
-	#make ARCH=${KERNEL_ARCH} CROSS_COMPILE="${CC}" menuconfig
-	cp -v .config "${DIR}/defconfig_${config}"
+	make ARCH=${KERNEL_ARCH} CROSS_COMPILE="${CC}" menuconfig
+	#cp -v .config "${DIR}/defconfig_${config}"
 
 	cd "${DIR}/" || exit
 }
@@ -160,7 +160,7 @@ make_dtbs_pkg () {
 	make_pkg
 }
 
-apply_patch
+#apply_patch
 
 copy_defconfig
 

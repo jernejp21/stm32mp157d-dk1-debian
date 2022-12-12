@@ -74,14 +74,14 @@ clean_loop() {
 write_uboot() {
     echo "============================================"
     echo "Install U-Boot bootloader version ${UBOOT_VERSION}:"
-    if [ -f ${DIR}/deploy/fip.bin ]; then
+    if [ -f ${DIR}/deploy/fip-${board}.bin ]; then
     #if [ -f ${DIR}/deploy/u-boot.img ]; then
         # sudo dd if=${DIR}/deploy/u-boot-spl.stm32 of=${LOOP_DEVICE}0p1
         # sudo dd if=${DIR}/deploy/u-boot-spl.stm32 of=${LOOP_DEVICE}p2
         # sudo dd if=${DIR}/deploy/u-boot.img of=${LOOP_DEVICE}p3
         sudo dd if=${DIR}/deploy/tf-a-${board}.stm32 of=${LOOP_DEVICE}p1
         sudo dd if=${DIR}/deploy/tf-a-${board}.stm32 of=${LOOP_DEVICE}p2
-        sudo dd if=${DIR}/deploy/fip.bin of=${LOOP_DEVICE}p3
+        sudo dd if=${DIR}/deploy/fip-${board}.bin of=${LOOP_DEVICE}p3
     else
         echo "Error, Uboot not found"
         clean_loop
@@ -114,12 +114,18 @@ write_rootfs(){
 
     echo ""
     echo "Extract and copy Root File System: ${DIR}/dl/${rootfs_name}"
-    if [ -f "${DIR}/dl/${rootfs_name}" ]; then
-        # ubuntu-base-22.04-base-armhf.tar.gz
+    if ! [ -d "${DIR}/dl/${rootfs_name}" ]; then
+        cd ${DIR}/dl
+        tar xvf ${DIR}/dl/${rootfs_name}.tar.xz || { exit 1 ; }
+    fi
+
+    if [ -d "${DIR}/dl/${rootfs_name}" ]; then
+        echo ubuntu-base-22.04-base-armhf.tar.gz
         # sudo tar xvfp ./deploy/${UBUNTU_18_VERSION}/*/*.tar -C ${MOUNT_PATH}
         # sudo tar xvfp ${DIR}/ubuntu-base-22.04-base-armhf.tar.gz -C ${MOUNT_PATH}
         #sudo tar xzpf ${DIR}/deploy/rootfs.tar.gz -C ${MOUNT_PATH}
-        sudo tar xzpf ${DIR}/dl/${rootfs_name} -C ${MOUNT_PATH} || { clean_loop ; exit 1 ; }
+        #tar xvf ${DIR}/dl/${rootfs_name}.tar.xz
+        sudo tar xvf ${DIR}/dl/${rootfs_name}/armhf-rootfs* -C ${MOUNT_PATH} || { clean_loop ; exit 1 ; }
         #sudo cp -ar ${DIR}/deploy/rootfs/.  ${MOUNT_PATH}
         #sudo rsync -azvh ${DIR}/rootfs/.  ${MOUNT_PATH}
         # sudo tar xfp ${DIR}/dl/${rootfs_name} -C ${MOUNT_PATH}
@@ -163,23 +169,23 @@ copy_kernel_and_modules(){
     # sudo mkdir -p ${MOUNT_PATH}/lib/modules/${kernel_ver}/extra/
     # sudo cp -v ${DIR}/gcnano-driver-6.4.3/galcore.ko ${MOUNT_PATH}/lib/modules/${kernel_ver}/extra/
 
-    sudo sh -c "echo 'allow-hotplug eth0' >> ${MOUNT_PATH}/etc/network/interfaces"
-    sudo sh -c "echo 'iface eth0 inet dhcp' >> ${MOUNT_PATH}/etc/network/interfaces"
+    #sudo sh -c "echo 'allow-hotplug eth0' >> ${MOUNT_PATH}/etc/network/interfaces"
+    #sudo sh -c "echo 'iface eth0 inet dhcp' >> ${MOUNT_PATH}/etc/network/interfaces"
 
     echo ""
-    echo "Copy WiFi firmware"
-    sudo mkdir -p ${MOUNT_PATH}/lib/firmware/brcm/
-    sudo cp -v ./wifi_firmware/* ${MOUNT_PATH}/lib/firmware/brcm/
-    sudo cp -v ./wifi_firmware/brcmfmac43430-sdio.txt ${MOUNT_PATH}/lib/firmware/brcm/brcmfmac43430-sdio.st,${board}.txt
+    #echo "Copy WiFi firmware"
+    #sudo mkdir -p ${MOUNT_PATH}/lib/firmware/brcm/
+    #sudo cp -v ./wifi_firmware/* ${MOUNT_PATH}/lib/firmware/brcm/
+    #sudo cp -v ./wifi_firmware/brcmfmac43430-sdio.txt ${MOUNT_PATH}/lib/firmware/brcm/brcmfmac43430-sdio.st,${board}.txt
     
 
     # add wellcome information
-    sudo sh -c "echo 'Ubuntu 22.04 LTS \\l' > ${MOUNT_PATH}/etc/issue"
-    sudo sh -c "echo 'Build: $(date +'%d/%m/%Y')' >> ${MOUNT_PATH}/etc/issue"
-    sudo sh -c "echo ' ' >> ${MOUNT_PATH}/etc/issue"
-    sudo sh -c "echo 'login: ubuntu' >> ${MOUNT_PATH}/etc/issue"
-    sudo sh -c "echo 'passw: root' >> ${MOUNT_PATH}/etc/issue"
-    sudo sh -c "echo ' ' >> ${MOUNT_PATH}/etc/issue"
+    #sudo sh -c "echo 'Ubuntu 22.04 LTS \\l' > ${MOUNT_PATH}/etc/issue"
+    #sudo sh -c "echo 'Build: $(date +'%d/%m/%Y')' >> ${MOUNT_PATH}/etc/issue"
+    #sudo sh -c "echo ' ' >> ${MOUNT_PATH}/etc/issue"
+    #sudo sh -c "echo 'login: ubuntu' >> ${MOUNT_PATH}/etc/issue"
+    #sudo sh -c "echo 'passw: root' >> ${MOUNT_PATH}/etc/issue"
+    #sudo sh -c "echo ' ' >> ${MOUNT_PATH}/etc/issue"
 # activate welcome message
     # sudo chmod +x ${MOUNT_PATH}/etc/update-motd.d/00-header
     # sudo chmod +x ${MOUNT_PATH}/etc/update-motd.d/10-help-text
@@ -190,7 +196,7 @@ copy_kernel_and_modules(){
     echo ""
     echo "Copy helper scripts"
     sudo cp -v ./script/resize_sd.sh ${MOUNT_PATH}/usr/bin/
-    sudo cp -v ./script/activate_wifi.sh ${MOUNT_PATH}/usr/bin/
+    #sudo cp -v ./script/activate_wifi.sh ${MOUNT_PATH}/usr/bin/
     
     echo ""
     echo "File Systems Table (/etc/fstab)"
@@ -240,7 +246,7 @@ for option in ${OPTIONS}; do
     stm32mp157a-dk1) board=${OPTIONS} ;;
     stm32mp157a-ed1) board=${OPTIONS} ;;
 
-    *) board="stm32mp157c-dk2" ;;
+    *) board="stm32mp157d-dk1" ;;
     esac
 done
 

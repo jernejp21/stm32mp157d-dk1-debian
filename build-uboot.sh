@@ -18,8 +18,8 @@ mkdir -p "${DIR}/deploy/"
 build_uboot() {    
     cd ${DIR}/u-boot
 
-    echo "Apply patch"
-    git apply -v --whitespace=fix ${DIR}/00004-add-u-boot-stm32mp157a-sodimm2-mx.patch || { echo "Error apply patch"; }
+    #echo "Apply patch"
+    #git apply -v --whitespace=fix ${DIR}/00004-add-u-boot-stm32mp157a-sodimm2-mx.patch || { echo "Error apply patch"; }
 
     echo "============================================"
     echo "Start build U-Boot: $(git branch --show-current)"
@@ -28,7 +28,7 @@ build_uboot() {
     make ARCH=arm CROSS_COMPILE=${CC} distclean
 	#make ARCH=arm CROSS_COMPILE=${CC} stm32mp15_basic_defconfig # non trusted u-boot
     make ARCH=arm CROSS_COMPILE=${CC} stm32mp15_trusted_defconfig
-	make ARCH=arm CROSS_COMPILE=${CC} DEVICE_TREE=${board} all u-boot.stm32 -j${CORES}
+	make ARCH=arm CROSS_COMPILE=${CC} DEVICE_TREE=${board} all -j${CORES}
 	
 	echo "============================================"
 	if [ -f  u-boot.bin ]; then
@@ -44,6 +44,8 @@ build_uboot() {
 	    #cp -v u-boot-spl.stm32 ${DIR}/deploy
 
 	    cp -v u-boot.bin ${DIR}/deploy
+        cp -v u-boot-nodtb.bin ${DIR}/deploy
+        cp -v u-boot.dtb ${DIR}/deploy
 	else
         export ERROR_MSG="U-Boot: Build Failure: board ${board}"
 		/bin/sh -e "${DIR}/error.sh" && { exit 1 ; }
@@ -56,8 +58,8 @@ build_uboot() {
 build_arm_trusted_firmware() {
 
     cd ${DIR}/arm-trusted-firmware
-    echo "Apply patch"
-    git apply -v --whitespace=fix ${DIR}/00005-add-at-f-stm32mp157a-sodimm2-mx.patch || { echo "Error apply patch"; }
+    #echo "Apply patch"
+    #git apply -v --whitespace=fix ${DIR}/00005-add-at-f-stm32mp157a-sodimm2-mx.patch || { echo "Error apply patch"; }
     echo "============================================"
     echo "Start build Arm Trust Firmware: ${board} $(git branch --show-current)"
     
@@ -65,14 +67,12 @@ build_arm_trusted_firmware() {
            rm -r ${DIR}/arm-trusted-firmware/build
     fi
 
-    make -C ./tools/fiptool \
-        PLAT=stm32mp1 ARCH=aarch32 ARM_ARCH_MAJOR=7 CROSS_COMPILE=${CC} \
-        STM32MP_SDMMC=1 STM32MP_EMMC=1 \
-        AARCH32_SP=sp_min \
-        DTB_FILE_NAME=${board}.dtb \
-        BL33_CFG=${DIR}/u-boot/u-boot.dtb \
-        BL33=${DIR}/u-boot/u-boot-nodtb.bin \
-        -j${CORES}
+    #make \
+    #    PLAT=stm32mp1 ARCH=aarch32 ARM_ARCH_MAJOR=7 CROSS_COMPILE=${CC} \
+    #    STM32MP_SDMMC=1 STM32MP_EMMC=1 \
+    #    AARCH32_SP=sp_min \
+    #    DTB_FILE_NAME=${board}.dtb \
+    #    -j${CORES}
 
     make  \
         PLAT=stm32mp1 ARCH=aarch32 ARM_ARCH_MAJOR=7 CROSS_COMPILE=${CC} \
@@ -98,11 +98,11 @@ build_arm_trusted_firmware() {
 
     cp -v ./build/stm32mp1/release/tf-a-${board}.stm32 ${DIR}/deploy
 
-    if [ -f ${DIR}/deploy/fip.bin ]; then 
-            rm ${DIR}/deploy/fip.bin
+    if [ -f ${DIR}/deploy/fip-${board}.bin ]; then 
+            rm ${DIR}/deploy/fip-${board}.bin
     fi
 	
-    cp -v ./build/stm32mp1/release/fip.bin ${DIR}/deploy
+    cp -v ./build/stm32mp1/release/fip.bin ${DIR}/deploy/fip-${board}.bin
 	   
 
     cd "${DIR}/" || exit 0
@@ -135,7 +135,7 @@ for option in ${OPTIONS}; do
     stm32mp157a-dk1) board=${OPTIONS} ;;
     stm32mp157a-ed1) board=${OPTIONS} ;;
 
-    *) board="stm32mp157c-dk2" ;;
+    *) board="stm32mp157d-dk1" ;;
     esac
 done
 
@@ -148,7 +148,7 @@ echo ""
 echo "-----------------------------"
 echo "Script Complete: board name: ${board}"
 echo ""
-echo "Trusted U-boot:   ${DIR}/deploy/fib.bin"
+echo "Trusted U-boot:   ${DIR}/deploy/fib-${board}.bin"
 echo "Config RAM:       ${DIR}/deploy/tf-a-${board}.stm32"
 echo "-----------------------------"
 
